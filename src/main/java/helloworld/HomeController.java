@@ -11,8 +11,9 @@ import javax.sql.DataSource;
 
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.app.ApplicationInstanceInfo;
-import org.springframework.data.mongodb.MongoDbFactory;
+import io.pivotal.cfenv.core.CfApplication;
+import io.pivotal.cfenv.core.CfEnv;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -25,13 +26,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class HomeController {
     @Autowired(required = false) DataSource dataSource;
     @Autowired(required = false) RedisConnectionFactory redisConnectionFactory;
-    @Autowired(required = false) MongoDbFactory mongoDbFactory;
+    @Autowired(required = false) MongoDatabaseFactory mongoDbFactory;
     @Autowired(required = false) ConnectionFactory rabbitConnectionFactory;
 
-    @Autowired(required = false) ApplicationInstanceInfo instanceInfo;
+    @Autowired(required = false) CfEnv cfEnv;
 
     @RequestMapping("/")
     public String home(Model model) {
+        CfApplication instanceInfo = (cfEnv != null && cfEnv.isInCf()) ? cfEnv.getApp() : null;
         model.addAttribute("instanceInfo", instanceInfo);
 
         if (instanceInfo != null) {
@@ -66,14 +68,14 @@ public class HomeController {
         }
     }
 
-    private String toString(MongoDbFactory mongoDbFactory) {
+    private String toString(MongoDatabaseFactory mongoDbFactory) {
         if (mongoDbFactory == null) {
             return "<none>";
         } else {
             try {
-                return mongoDbFactory.getDb().getMongo().getAddress().toString();
+                return mongoDbFactory.getMongoDatabase().getName();
             } catch (Exception ex) {
-                return "<invalid address> " + mongoDbFactory.getDb().getMongo().toString();
+                return "<invalid address> " + mongoDbFactory.toString();
             }
         }
     }
